@@ -1,38 +1,52 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Calendar, Scissors, Package, Menu, X, ShoppingCart, BarChart3, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scissors, Package, Menu, X, ShoppingCart, BarChart3, LogOut, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
+
 const navItems = [{
   title: "Dashboard",
   path: "/",
-  icon: LayoutDashboard
+  icon: LayoutDashboard,
+  adminOnly: false
 }, {
   title: "Clientes",
   path: "/clients",
-  icon: Users
+  icon: Users,
+  adminOnly: false
 }, {
   title: "Agenda",
   path: "/appointments",
-  icon: Calendar
+  icon: Calendar,
+  adminOnly: false
 }, {
   title: "Servicios",
   path: "/services",
-  icon: Scissors
+  icon: Scissors,
+  adminOnly: false
 }, {
   title: "Inventario",
   path: "/inventory",
-  icon: Package
+  icon: Package,
+  adminOnly: false
 }, {
   title: "Punto de Venta",
   path: "/pos",
-  icon: ShoppingCart
+  icon: ShoppingCart,
+  adminOnly: false
 }, {
   title: "Reportes",
   path: "/reports",
-  icon: BarChart3
+  icon: BarChart3,
+  adminOnly: false
+}, {
+  title: "Usuarios",
+  path: "/users",
+  icon: UserCog,
+  adminOnly: true
 }];
 export function AppSidebar() {
   const location = useLocation();
@@ -41,10 +55,15 @@ export function AppSidebar() {
     signOut,
     user
   } = useAuth();
+  const { isAdmin } = useUserRole();
   const handleLogout = async () => {
     await signOut();
     toast.success("Sesión cerrada");
   };
+
+  // Filter nav items based on role
+  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
+
   return <>
       {/* Mobile menu button */}
       <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 lg:hidden bg-card shadow-md" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -70,7 +89,7 @@ export function AppSidebar() {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-            {navItems.map(item => {
+            {filteredNavItems.map(item => {
             const isActive = location.pathname === item.path;
             return <NavLink key={item.path} to={item.path} onClick={() => setMobileOpen(false)} className={cn("flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 text-success-foreground font-mono text-center bg-sidebar-primary", isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
                   <item.icon className={cn("h-5 w-5", isActive && "text-sidebar-primary")} />
