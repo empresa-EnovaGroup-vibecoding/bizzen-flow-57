@@ -414,12 +414,12 @@ export default function POS() {
                 <User className="h-4 w-4" />
                 Cliente (opcional)
               </Label>
-              <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <Select value={selectedClient} onValueChange={(value) => setSelectedClient(value === "none" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin cliente</SelectItem>
+                  <SelectItem value="none">Sin cliente</SelectItem>
                   {clients?.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
