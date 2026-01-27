@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { WhatsAppButton } from "@/components/appointments/WhatsAppButton";
-import { Plus, Calendar as CalendarIcon, Clock, User, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, User, Trash2, AlertCircle, Users, DoorOpen } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, isSameDay, differenceInMinutes } from "date-fns";
 import { es } from "date-fns/locale";
@@ -37,7 +37,11 @@ interface Appointment {
   status: string;
   notes: string | null;
   total_price: number;
+  specialist_id: string | null;
+  cabin_id: string | null;
   clients: { name: string; phone: string | null } | null;
+  team_members: { name: string } | null;
+  cabins: { name: string } | null;
   appointment_services: {
     id: string;
     price_at_time: number;
@@ -58,11 +62,24 @@ interface Service {
   duration: number;
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string | null;
+}
+
+interface Cabin {
+  id: string;
+  name: string;
+}
+
 const statusConfig = {
-  pending: { label: "Pendiente", class: "status-pending" },
-  confirmed: { label: "Confirmada", class: "status-confirmed" },
-  completed: { label: "Completada", class: "status-completed" },
-  cancelled: { label: "Cancelada", class: "status-cancelled" },
+  pending: { label: "Pendiente", class: "bg-yellow-100 text-yellow-800 border-yellow-300" },
+  confirmed: { label: "Confirmada", class: "bg-blue-100 text-blue-800 border-blue-300" },
+  in_room: { label: "En Sala", class: "bg-purple-100 text-purple-800 border-purple-300" },
+  completed: { label: "Completada", class: "bg-green-100 text-green-800 border-green-300" },
+  no_show: { label: "No asistió", class: "bg-red-100 text-red-800 border-red-300" },
+  cancelled: { label: "Cancelada", class: "bg-gray-100 text-gray-800 border-gray-300" },
 };
 
 export default function Appointments() {
@@ -75,6 +92,8 @@ export default function Appointments() {
     status: "pending",
     notes: "",
     selectedServices: [] as string[],
+    specialist_id: "",
+    cabin_id: "",
   });
   const [now, setNow] = useState(new Date());
   const queryClient = useQueryClient();
@@ -98,6 +117,8 @@ export default function Appointments() {
         .select(`
           *,
           clients (name, phone),
+          team_members (name),
+          cabins (name),
           appointment_services (
             id,
             price_at_time,
@@ -137,12 +158,38 @@ export default function Appointments() {
     },
   });
 
+  const { data: teamMembers } = useQuery({
+    queryKey: ["teamMembers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_members")
+        .select("id, name, role")
+        .eq("is_active", true)
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data as TeamMember[];
+    },
+  });
+
+  const { data: cabins } = useQuery({
+    queryKey: ["cabins"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cabins")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data as Cabin[];
+    },
+  });
+
   // Check for upcoming appointments and show alerts
   useEffect(() => {
     if (!appointments) return;
 
     const upcomingAppointments = appointments.filter((apt) => {
-      if (apt.status === "cancelled" || apt.status === "completed") return false;
+      if (apt.status === "cancelled" || apt.status === "completed" || apt.status === "no_show") return false;
       const aptTime = new Date(apt.start_time);
       const minutesUntil = differenceInMinutes(aptTime, now);
       return minutesUntil > 0 && minutesUntil <= 60;
@@ -173,9 +220,11 @@ export default function Appointments() {
           client_id: data.client_id,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          status: data.status as "pending" | "confirmed" | "completed" | "cancelled",
+          status: data.status as "pending" | "confirmed" | "completed" | "cancelled" | "in_room" | "no_show",
           notes: data.notes || null,
           total_price: totalPrice,
+          specialist_id: data.specialist_id || null,
+          cabin_id: data.cabin_id || null,
         }])
         .select()
         .single();
@@ -215,7 +264,7 @@ export default function Appointments() {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase
         .from("appointments")
-        .update({ status: status as "pending" | "confirmed" | "completed" | "cancelled" })
+        .update({ status: status as "pending" | "confirmed" | "completed" | "cancelled" | "in_room" | "no_show" })
         .eq("id", id);
       if (error) throw error;
     },
@@ -254,6 +303,8 @@ export default function Appointments() {
       status: "pending",
       notes: "",
       selectedServices: [],
+      specialist_id: "",
+      cabin_id: "",
     });
   };
 
@@ -364,6 +415,45 @@ export default function Appointments() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="specialist">Especialista</Label>
+                  <Select
+                    value={formData.specialist_id}
+                    onValueChange={(value) => setFormData({ ...formData, specialist_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teamMembers?.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cabin">Cabina</Label>
+                  <Select
+                    value={formData.cabin_id}
+                    onValueChange={(value) => setFormData({ ...formData, cabin_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cabins?.map((cabin) => (
+                        <SelectItem key={cabin.id} value={cabin.id}>
+                          {cabin.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Servicios</Label>
                 <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
@@ -409,7 +499,9 @@ export default function Appointments() {
                   <SelectContent>
                     <SelectItem value="pending">Pendiente</SelectItem>
                     <SelectItem value="confirmed">Confirmada</SelectItem>
+                    <SelectItem value="in_room">En Sala</SelectItem>
                     <SelectItem value="completed">Completada</SelectItem>
+                    <SelectItem value="no_show">No asistió</SelectItem>
                     <SelectItem value="cancelled">Cancelada</SelectItem>
                   </SelectContent>
                 </Select>
@@ -484,8 +576,12 @@ export default function Appointments() {
           ) : (
             <div className="space-y-4">
               {selectedDayAppointments.map((appointment) => {
-                const status = statusConfig[appointment.status as keyof typeof statusConfig];
+                const status = statusConfig[appointment.status as keyof typeof statusConfig] || statusConfig.pending;
                 const upcoming = isUpcoming(appointment.start_time);
+                const serviceNames = appointment.appointment_services
+                  .map(s => s.services?.name)
+                  .filter(Boolean)
+                  .join(", ");
                 
                 return (
                   <div
@@ -504,22 +600,47 @@ export default function Appointments() {
                       </div>
                     )}
                     
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
                           <User className="h-5 w-5 text-primary" />
                         </div>
-                        <div>
-                          <p className="font-medium text-foreground">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground truncate">
                             {appointment.clients?.name || "Cliente no encontrado"}
                           </p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          
+                          {/* Service Name - prominently displayed */}
+                          {serviceNames && (
+                            <p className="text-sm text-primary font-medium mt-0.5">
+                              {serviceNames}
+                            </p>
+                          )}
+                          
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                             <Clock className="h-3 w-3" />
                             {format(new Date(appointment.start_time), "HH:mm")} hrs
                           </p>
+
+                          {/* Specialist and Cabin badges */}
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            {appointment.team_members?.name && (
+                              <Badge variant="outline" className="text-xs gap-1 bg-background">
+                                <Users className="h-3 w-3" />
+                                {appointment.team_members.name}
+                              </Badge>
+                            )}
+                            {appointment.cabins?.name && (
+                              <Badge variant="outline" className="text-xs gap-1 bg-background">
+                                <DoorOpen className="h-3 w-3" />
+                                {appointment.cabins.name}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      
+                      <div className="flex items-center gap-2 shrink-0">
                         <WhatsAppButton
                           phone={appointment.clients?.phone || null}
                           clientName={appointment.clients?.name || ""}
@@ -531,13 +652,15 @@ export default function Appointments() {
                             updateStatusMutation.mutate({ id: appointment.id, status: value })
                           }
                         >
-                          <SelectTrigger className={cn("w-32 h-8 text-xs", status?.class)}>
+                          <SelectTrigger className={cn("w-32 h-8 text-xs font-medium", status?.class)}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="pending">Pendiente</SelectItem>
                             <SelectItem value="confirmed">Confirmada</SelectItem>
+                            <SelectItem value="in_room">En Sala</SelectItem>
                             <SelectItem value="completed">Completada</SelectItem>
+                            <SelectItem value="no_show">No asistió</SelectItem>
                             <SelectItem value="cancelled">Cancelada</SelectItem>
                           </SelectContent>
                         </Select>
@@ -557,11 +680,11 @@ export default function Appointments() {
                     </div>
 
                     {appointment.appointment_services.length > 0 && (
-                      <div className="border-t border-border pt-3">
+                      <div className="border-t border-border pt-3 mt-3">
                         <div className="flex flex-wrap gap-2 mb-2">
                           {appointment.appointment_services.map((s) => (
                             <Badge key={s.id} variant="secondary" className="text-xs">
-                              {s.services?.name || "Servicio eliminado"}
+                              {s.services?.name || "Servicio eliminado"} - Q{Number(s.price_at_time).toFixed(2)}
                             </Badge>
                           ))}
                         </div>

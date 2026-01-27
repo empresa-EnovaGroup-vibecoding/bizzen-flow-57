@@ -55,33 +55,39 @@ export type Database = {
       }
       appointments: {
         Row: {
+          cabin_id: string | null
           client_id: string
           created_at: string
           end_time: string | null
           id: string
           notes: string | null
+          specialist_id: string | null
           start_time: string
           status: Database["public"]["Enums"]["appointment_status"]
           total_price: number | null
           updated_at: string
         }
         Insert: {
+          cabin_id?: string | null
           client_id: string
           created_at?: string
           end_time?: string | null
           id?: string
           notes?: string | null
+          specialist_id?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["appointment_status"]
           total_price?: number | null
           updated_at?: string
         }
         Update: {
+          cabin_id?: string | null
           client_id?: string
           created_at?: string
           end_time?: string | null
           id?: string
           notes?: string | null
+          specialist_id?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["appointment_status"]
           total_price?: number | null
@@ -89,13 +95,54 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "appointments_cabin_id_fkey"
+            columns: ["cabin_id"]
+            isOneToOne: false
+            referencedRelation: "cabins"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "appointments_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      cabins: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       client_packages: {
         Row: {
@@ -548,6 +595,39 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -590,7 +670,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff"
-      appointment_status: "pending" | "confirmed" | "completed" | "cancelled"
+      appointment_status:
+        | "pending"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
+        | "in_room"
+        | "no_show"
       cleaning_frequency_type: "once" | "twice" | "occasional"
       skin_type:
         | "normal"
@@ -727,7 +813,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
-      appointment_status: ["pending", "confirmed", "completed", "cancelled"],
+      appointment_status: [
+        "pending",
+        "confirmed",
+        "completed",
+        "cancelled",
+        "in_room",
+        "no_show",
+      ],
       cleaning_frequency_type: ["once", "twice", "occasional"],
       skin_type: [
         "normal",
