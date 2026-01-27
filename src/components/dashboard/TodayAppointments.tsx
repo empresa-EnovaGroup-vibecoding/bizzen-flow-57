@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const statusConfig = {
-  pending: { label: "Pendiente", class: "status-pending" },
-  confirmed: { label: "Confirmada", class: "status-confirmed" },
-  completed: { label: "Completada", class: "status-completed" },
-  cancelled: { label: "Cancelada", class: "status-cancelled" },
+  pending: { label: "Pendiente", class: "bg-yellow-100 text-yellow-800 border-yellow-300" },
+  confirmed: { label: "Confirmada", class: "bg-blue-100 text-blue-800 border-blue-300" },
+  in_room: { label: "En Sala", class: "bg-purple-100 text-purple-800 border-purple-300" },
+  completed: { label: "Completada", class: "bg-green-100 text-green-800 border-green-300" },
+  no_show: { label: "No asistió", class: "bg-red-100 text-red-800 border-red-300" },
+  cancelled: { label: "Cancelada", class: "bg-gray-100 text-gray-800 border-gray-300" },
 };
 
 export function TodayAppointments() {
@@ -25,7 +27,11 @@ export function TodayAppointments() {
         .from("appointments")
         .select(`
           *,
-          clients (name, phone)
+          clients (name, phone),
+          appointment_services (
+            id,
+            services (name)
+          )
         `)
         .gte("start_time", startOfDay)
         .lte("start_time", endOfDay)
@@ -66,7 +72,12 @@ export function TodayAppointments() {
       ) : (
         <div className="space-y-3">
           {appointments.map((appointment) => {
-            const status = statusConfig[appointment.status as keyof typeof statusConfig];
+            const status = statusConfig[appointment.status as keyof typeof statusConfig] || statusConfig.pending;
+            const serviceNames = appointment.appointment_services
+              ?.map((s: { services: { name: string } | null }) => s.services?.name)
+              .filter(Boolean)
+              .join(", ");
+
             return (
               <div
                 key={appointment.id}
@@ -79,11 +90,16 @@ export function TodayAppointments() {
                   <p className="font-medium text-foreground truncate">
                     {appointment.clients?.name || "Cliente no encontrado"}
                   </p>
+                  {serviceNames && (
+                    <p className="text-xs text-primary font-medium truncate">
+                      {serviceNames}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {format(new Date(appointment.start_time), "HH:mm")} hrs
                   </p>
                 </div>
-                <Badge variant="outline" className={cn("text-xs", status?.class)}>
+                <Badge variant="outline" className={cn("text-xs shrink-0", status?.class)}>
                   {status?.label}
                 </Badge>
               </div>
