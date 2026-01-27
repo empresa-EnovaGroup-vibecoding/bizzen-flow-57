@@ -94,8 +94,8 @@ export function AppSidebar() {
           <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
           {filteredNavItems.map(item => {
             const isActive = location.pathname === item.path;
-            return <NavLink key={item.path} to={item.path} onClick={() => setMobileOpen(false)} className={cn("flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200", isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
-                  <item.icon className={cn("h-5 w-5", isActive && "text-sidebar-primary")} />
+            return <NavLink key={item.path} to={item.path} onClick={() => setMobileOpen(false)} className={cn("flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200", isActive ? "bg-sidebar-accent text-white" : "text-white/90 hover:bg-sidebar-accent/50 hover:text-white")}>
+                  <item.icon className={cn("h-5 w-5 text-white", isActive && "text-sidebar-primary")} />
                   <span>{item.title}</span>
                   {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-primary" />}
                 </NavLink>;
@@ -103,16 +103,16 @@ export function AppSidebar() {
           </nav>
 
           {/* User & Logout */}
-          <div className="border-t border-sidebar-border p-4 space-y-3">
+          <div className="border-t border-sidebar-border p-4 space-y-3 mt-4">
             {user && <div className="px-3 py-2">
-                <p className="text-xs text-sidebar-foreground/50">Conectado como</p>
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                <p className="text-xs text-white/60">Conectado como</p>
+                <p className="text-sm font-medium text-white truncate">
                   {user.email}
                 </p>
               </div>}
             <Button 
               variant="destructive" 
-              className="w-full justify-start gap-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium" 
+              className="w-full justify-start gap-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium mt-2" 
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5" />
