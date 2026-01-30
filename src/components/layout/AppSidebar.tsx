@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, Calendar, Scissors, Package, Menu, X, ShoppingCart, BarChart3, LogOut, UserCog, Gift, UserCheck, DoorOpen } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scissors, Package, Menu, X, ShoppingCart, BarChart3, LogOut, UserCog, Gift, UserCheck, DoorOpen, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,11 @@ const navItems = [{
   path: "/users",
   icon: UserCog,
   adminOnly: true
+}, {
+  title: "Membresía Pro",
+  path: "/membership",
+  icon: Crown,
+  adminOnly: false
 }];
 export function AppSidebar() {
   const location = useLocation();
