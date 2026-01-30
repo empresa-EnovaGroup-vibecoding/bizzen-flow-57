@@ -20,6 +20,7 @@ import UserManagement from "./pages/UserManagement";
 import Packages from "./pages/Packages";
 import Team from "./pages/Team";
 import Cabins from "./pages/Cabins";
+import Membership from "./pages/Membership";
 
 const queryClient = new QueryClient();
 
@@ -142,6 +143,16 @@ const App = () => (
                 <RequireAuth>
                   <MainLayout>
                     <Cabins />
+                  </MainLayout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/membership"
+              element={
+                <RequireAuth>
+                  <MainLayout>
+                    <Membership />
                   </MainLayout>
                 </RequireAuth>
               }
