@@ -20,7 +20,7 @@ export function WhatsAppButton({
 
   const handleClick = () => {
     // Clean phone number (remove spaces, dashes, etc.)
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
+    const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "");
     
     // Format the appointment date and time
     const date = new Date(appointmentTime);
